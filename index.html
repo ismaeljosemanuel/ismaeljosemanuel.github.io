@@ -208,9 +208,13 @@ input[readonly]{cursor:default;border-bottom-color:var(--line)!important;box-sha
 .seg{display:grid;grid-template-columns:1fr 1fr;gap:12px;border:0;padding:0;margin:0;min-width:0}
 .seg legend{padding:0;margin:0 0 12px;font-size:14px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
 .seg input{position:absolute;opacity:0;pointer-events:none}
-.seg label{margin:0;display:flex;align-items:center;justify-content:center;min-height:64px;padding:8px 10px;border:1px solid var(--fg);color:var(--fg);font-size:15px;font-weight:500;letter-spacing:.06em;text-align:center;cursor:pointer;background:transparent;-webkit-tap-highlight-color:transparent}
-.seg input:checked + label,.seg label.on{background:var(--fg);color:var(--paper)}.seg input:not(:checked) + label:not(.on){background:transparent;color:var(--fg)}
+.seg label{position:relative;margin:0;display:flex;align-items:center;justify-content:center;min-height:64px;padding:8px 14px;border:2px solid var(--line);color:var(--fg);font-size:15px;font-weight:500;letter-spacing:.06em;text-align:center;cursor:pointer;background:transparent;-webkit-tap-highlight-color:transparent;transition:background-color .22s ease,border-color .22s ease,color .22s ease,transform .12s ease}
+.seg label:active{transform:scale(.97)}
+.seg input:checked + label,.seg label.on{background:var(--wax);border-color:var(--wax);color:var(--wax-fg);font-weight:700}
+.seg input:not(:checked) + label:not(.on){background:transparent;border-color:var(--line);color:var(--fg)}
+.seg input:checked + label::before,.seg label.on::before{content:"✓";margin-right:8px;font-weight:700}
 .seg input:focus-visible + label{outline:2px solid var(--wax);outline-offset:4px}
+@media (hover:hover){.seg input:not(:checked) + label:not(.on):hover{border-color:var(--wax)}}
 .btn{appearance:none;font:500 16px var(--body);letter-spacing:.12em;text-transform:uppercase;min-height:64px;border:1px solid var(--wax);color:var(--wax-fg);
   background:linear-gradient(var(--fg),var(--fg)) no-repeat 0 0/0% 100%,var(--wax);padding:14px 20px;cursor:pointer;width:100%;
   display:flex;align-items:center;justify-content:center;text-decoration:none;text-align:center;transition:background-size .55s cubic-bezier(.6,0,.2,1),color .55s,border-color .55s}
