@@ -1079,48 +1079,65 @@ var CONFIG = {
       d.appendChild(v); pv.appendChild(d);
     });
     var waText = encodeURIComponent(message);
-    $("wa").href = "https://wa.me/" + (CONFIG.whatsapp || "") + "?text=" + waText;
-    var wa2 = $("wa2"); wa2.hidden = true;
-    (function(){
-      if (!CONFIG.hoja || !invId) return;
+    var wa = $("wa"), wa2 = $("wa2");
+    wa.hidden = true; wa2.hidden = true;
+    /* Busca quién envió esta invitación (Ismael o José Manuel), para avisarle a él y no siempre a Carlos. */
+    var remitentePromesa = new Promise(function(resolve){
+      if (!CONFIG.hoja || !invId) { resolve(null); return; }
       var cbName = "__quienCb" + Math.random().toString(36).slice(2);
       var s = document.createElement("script");
+      var listo = false;
       function limpia(){ try{ delete window[cbName]; }catch(e){ window[cbName] = undefined; } if (s.parentNode) s.parentNode.removeChild(s); }
-      window[cbName] = function(d){
-        if (d && d.tel) { wa2.href = "https://wa.me/" + d.tel + "?text=" + waText; wa2.textContent = "Avisar también a " + (d.nombre || "quien te invitó"); wa2.hidden = false; }
-        limpia();
-      };
-      s.onerror = limpia;
+      function acabar(v){ if (listo) return; listo = true; limpia(); resolve(v); }
+      window[cbName] = function(d){ acabar(d && d.tel ? d : null); };
+      s.onerror = function(){ acabar(null); };
+      setTimeout(function(){ acabar(null); }, 6000);
       s.src = CONFIG.hoja + "?a=quien&id=" + encodeURIComponent(invId) + "&cb=" + cbName;
       document.body.appendChild(s);
-    })();
+    });
     $("status").textContent = "";
     var steps = $("steps"), title = $("rtitle"), saved = $("saved");
-    function showResult(ok){
+    function showResult(ok, remitente){
       if (ok) {
         title.textContent = "¡Confirmación recibida!";
-        saved.textContent = "Gracias, " + nombre + ". Ya lo tenemos apuntado. Si quieres, avísanos también por WhatsApp.";
-        steps.hidden = true; $("wa").textContent = "Avisar también a Carlos";
+        saved.textContent = "Gracias, " + nombre + ". Ya lo tenemos apuntado." + (remitente ? " Si quieres, avísanos también por WhatsApp." : "");
+        steps.hidden = true;
+        wa.hidden = true;
+        if (remitente) {
+          wa2.href = "https://wa.me/" + remitente.tel + "?text=" + waText;
+          wa2.textContent = "Avisar también a " + (remitente.nombre || "quien te invitó");
+          wa2.hidden = false;
+        } else wa2.hidden = true;
       } else {
         title.textContent = "Último paso";
         saved.textContent = CONFIG.hoja ? "No hemos podido guardarla directamente. Envíala por WhatsApp para que nos llegue." : "";
-        steps.hidden = false; $("wa").textContent = "Enviar a Carlos por WhatsApp";
+        steps.hidden = false;
+        wa2.hidden = true;
+        var tel = remitente ? remitente.tel : CONFIG.whatsapp;
+        var nom = remitente ? (remitente.nombre || "quien te invitó") : "Carlos";
+        wa.href = "https://wa.me/" + (tel || "") + "?text=" + waText;
+        wa.textContent = "Enviar a " + nom + " por WhatsApp";
+        wa.hidden = false;
       }
       form.hidden = true; result.hidden = false;
       result.scrollIntoView({block:"nearest"});
     }
-    if (!CONFIG.hoja) { showResult(false); return; }
+    if (!CONFIG.hoja) { remitentePromesa.then(function(r){ showResult(false, r); }); return; }
     var btn = form.querySelector("button[type=submit]"); btn.disabled = true; btn.textContent = "Enviando…";
-    var quien = soloAc ? "Solo acompañante" : vienes ? (plazas === 2 && +$("acomp").value ? "Los dos" : "Solo invitado") : "Ninguno";
+    var quienResp = soloAc ? "Solo acompañante" : vienes ? (plazas === 2 && +$("acomp").value ? "Los dos" : "Solo invitado") : "Ninguno";
     var aI = "", aA = "";
     if (soloAc) aA = alG(2); else if (vienes) { aI = alG(1); if (plazas === 2 && +$("acomp").value === 1) aA = alG(2); }
     var payload = {id: invId, k: window.__KEY || "", nombre: nombre, asiste: vienes ? "Sí" : "No", acompanantes: vienes ? +$("acomp").value : (soloAc ? 1 : 0),
-      quien: quien, alergiasInvitado: aI, alergiasAcompanante: aA, mensaje: m};
+      quien: quienResp, alergiasInvitado: aI, alergiasAcompanante: aA, mensaje: m};
     var to = new AbortController(); var tm = setTimeout(function(){ to.abort(); }, 15000);
     fetch(CONFIG.hoja, {method:"POST", mode:"no-cors", headers:{"Content-Type":"text/plain;charset=utf-8"},
       body: JSON.stringify(payload), signal: to.signal})
-      .then(function(){ clearTimeout(tm); btn.disabled = false; btn.textContent = "Enviar mi confirmación"; showResult(true); })
-      .catch(function(){ clearTimeout(tm); btn.disabled = false; btn.textContent = "Enviar mi confirmación"; showResult(false); });
+      .then(function(){ clearTimeout(tm); return true; })
+      .catch(function(){ clearTimeout(tm); return false; })
+      .then(function(ok){
+        btn.disabled = false; btn.textContent = "Enviar mi confirmación";
+        remitentePromesa.then(function(r){ showResult(ok, r); });
+      });
   });
 
   $("back").addEventListener("click", function(){ result.hidden = true; form.hidden = false; $("nombre").focus(); });
