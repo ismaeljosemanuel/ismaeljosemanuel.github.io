@@ -686,7 +686,7 @@ html:not(.unlocked){overflow:hidden}
         </div>
         <fieldset class="seg">
           <legend>Asistencia</legend>
-          <input type="radio" id="si" name="asis" value="si" checked><label for="si">Sí, allí estaré</label>
+          <input type="radio" id="si" name="asis" value="si"><label for="si">Sí, allí estaré</label>
           <input type="radio" id="no" name="asis" value="no"><label for="no">No podré ir</label>
         </fieldset>
         <div id="soloAcompBox" hidden>
@@ -943,9 +943,11 @@ var CONFIG = {
       else {
         $("acompLbl").textContent = acompNombre ? "¿Venís " + (inv ? inv.split(" ")[0] : "tú") + " y " + acompNombre.split(" ")[0] + "?" : "¿Venís los dos?";
         $("acomp").innerHTML = '<option value="1">Sí, vamos los dos</option><option value="0">Solo yo</option>';
+        $("acomp").selectedIndex = -1;
         var an = acompNombre ? acompNombre.split(" ")[0] : "tu acompañante";
         $("soloAcompLbl").textContent = "¿Viene " + an + " sin ti?";
         $("soloAcomp").innerHTML = '<option value="0">No, tampoco vendrá</option><option value="1">Sí, ' + an.replace(/[<>&"]/g,"") + ' vendrá solo/a</option>';
+        $("soloAcomp").selectedIndex = -1;
       }
     }
   } catch (e) {}
@@ -1027,6 +1029,10 @@ var CONFIG = {
     e.preventDefault();
     var nombre = $("nombre").value.trim();
     if (!nombre) { $("err").textContent = "Escribe tu nombre para que sepamos quién eres."; $("nombre").focus(); return; }
+    if (form.asis.value !== "si" && form.asis.value !== "no") { $("err").textContent = "Elige si asistirás o no."; return; }
+    var vienesChk = form.asis.value === "si";
+    if (!vienesChk && plazas === 2 && !$("soloAcompBox").hidden && $("soloAcomp").value === "") { $("err").textContent = "Elige si tu acompañante vendrá o no."; return; }
+    if (vienesChk && plazas === 2 && !$("acompBox").hidden && $("acomp").value === "") { $("err").textContent = "Elige si venís los dos o tú solo/a."; return; }
     $("err").textContent = "";
     var vienes = form.asis.value === "si";
     var soloAc = !vienes && plazas === 2 && $("soloAcomp").value === "1";
