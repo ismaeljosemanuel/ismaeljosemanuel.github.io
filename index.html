@@ -679,6 +679,10 @@ html:not(.unlocked){overflow:hidden}
         <p class="lead" id="deadline">Debes confirmar tu asistencia antes del <strong>5 de diciembre</strong>. Tarda menos de un minuto.</p>
         <p class="lead" id="plazas" hidden></p>
       </div>
+      <div class="rv" id="previo" hidden>
+        <p class="status" id="previoTxt" aria-live="polite"></p>
+        <button class="btn alt" type="button" id="previoCambiar">Cambiar mi respuesta</button>
+      </div>
       <form id="form" class="rv" novalidate>
         <div>
           <label for="nombre">Tu nombre</label>
@@ -983,6 +987,33 @@ var CONFIG = {
 
   /* ---------- Formulario ---------- */
   var form = $("form"), result = $("result");
+  /* Si ya había respondido antes, se lo decimos en vez de mostrarle el formulario vacío. */
+  (function(){
+    var previo = $("previo"), previoTxt = $("previoTxt"), previoCambiar = $("previoCambiar");
+    if (!previo || !CONFIG.hoja || !invId) return;
+    var cbName = "__estadoCb" + Math.random().toString(36).slice(2);
+    var s = document.createElement("script");
+    var listo = false;
+    function limpia(){ try{ delete window[cbName]; }catch(e){ window[cbName] = undefined; } if (s.parentNode) s.parentNode.removeChild(s); }
+    function acabar(){ if (listo) return; listo = true; limpia(); }
+    window[cbName] = function(d){
+      acabar();
+      if (!d || !d.resp) return;
+      var txt;
+      if (d.resp === "Acepta") txt = "Ya nos dijiste que sí vienes" + (d.vienen ? " (" + d.vienen + (d.vienen == 1 ? " persona" : " personas") + ")" : "") + ".";
+      else if (d.resp === "Solo acompañante") txt = "Ya nos dijiste que tu acompañante vendrá solo/a.";
+      else txt = "Ya nos dijiste que no podrás venir.";
+      if (d.fecha) txt += " Lo confirmaste el " + d.fecha + ".";
+      previoTxt.textContent = txt;
+      previo.hidden = false;
+      form.hidden = true;
+    };
+    s.onerror = acabar;
+    setTimeout(acabar, 6000);
+    s.src = CONFIG.hoja + "?a=estado&id=" + encodeURIComponent(invId) + "&cb=" + cbName;
+    document.body.appendChild(s);
+    if (previoCambiar) previoCambiar.addEventListener("click", function(){ previo.hidden = true; form.hidden = false; $("nombre").focus(); });
+  })();
   function toggleExtra(){
     var no = form.asis.value === "no";
     var sa = $("soloAcompBox"), solo = no && plazas === 2 && $("soloAcomp").value === "1";
